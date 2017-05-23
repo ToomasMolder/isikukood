@@ -1,5 +1,5 @@
 # isikukood
-Stuff around Estonian ID (Eesti isikukood)
+Stuff around Estonian ID (Eesti isikukood), scripts in Python
 
 Find, how many similarities in ID (isikukood) is available when using check digit calculation algorithm
 according to Estionian ID https://et.wikipedia.org/wiki/Isikukood and
