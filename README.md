@@ -2,10 +2,9 @@
 Stuff around Estonian ID (Eesti isikukood), scripts in Python
 
 Find, how many similarities in ID (isikukood) is available when using check digit calculation algorithm
-   according to Estionian ID https://et.wikipedia.org/wiki/Isikukood
+   according to Estonian ID https://et.wikipedia.org/wiki/Isikukood
 
 Author: Toomas Mölder <toomas.molder@gmail.com>, +372 5522000  
-Last modified: 2017-05-23  
 
 NB! Might be buggy and crappy, written for own purposes  
 NB! Global configuration signature is not checked. Use this program at your own risk.  
