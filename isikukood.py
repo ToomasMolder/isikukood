@@ -1,5 +1,5 @@
 # Find, how many similarities in ID (isikukood) is available when using check digit calculation algorithm
-#    according to Estionian ID https://et.wikipedia.org/wiki/Isikukood
+#    according to Estonian ID https://et.wikipedia.org/wiki/Isikukood
 ##    
 ##   TODO: and according to Luhn algorithm https://en.wikipedia.org/wiki/Luhn_algorithm
 # 
@@ -8,7 +8,6 @@
 #
 # NB! Might be buggy and crappy, written for own purposes
 # TODO: better logic of input from user
-# TODO: rewrite similarities algorithm to find possible wrong keypresses on keyboard
 
 # Imports required for different activities within main program and definitions
 import os
