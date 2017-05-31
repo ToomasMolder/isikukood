@@ -4,7 +4,7 @@
 ##   TODO: and according to Luhn algorithm https://en.wikipedia.org/wiki/Luhn_algorithm
 # 
 # Author: Toomas Mölder <toomas.molder@gmail.com>, +372 5522000
-# Last modified: 2017-05-28
+# Last modified: 2017-05-31
 #
 # NB! Might be buggy and crappy, written for own purposes
 # TODO: better logic of input from user
@@ -238,8 +238,8 @@ def is_id_century(id):
     if (int(id[0]) >= min_century and int(id[0]) <= max_century):
         return True
     else:
-        # if debug == 1 or debug == 2:
-            # message("(" + inspect.stack()[0][3] + ") " + "Warning: " + "ID '" + id + "'. Century = " + str(id[0]))
+        if debug == 1 or debug == 2:
+            message("(" + inspect.stack()[0][3] + ") " + "Warning: " + "ID '" + id + "'. Century = " + str(id[0]))
         return False
 
 # Check that date is valid date, return True/False
@@ -265,7 +265,7 @@ def is_id_date(id):
     dd = int(id[5:7])
     
     if debug == 2:
-        message("(" + inspect.stack()[0][3] + ") " + "Info Date: Century = " + str(century) +
+        message("(" + inspect.stack()[0][3] + ") " + "Info: " + "Date Century = " + str(century) +
                 " Year (yy) = " + str(yy) +
                 " Year (yyyy) = " + str(yyyy) +
                 " Month = " + str(mm) +
@@ -274,8 +274,8 @@ def is_id_date(id):
     if is_date_valid (yyyy, mm, dd):
         return True
     else:
-        # if debug == 1 or debug == 2:
-            # message("(" + inspect.stack()[0][3] + ") " + "Warning: Date " + str(yyyy) + "-" + str(mm) + "-" + str(dd) + " is not valid.")
+        if debug == 1 or debug == 2:
+            message("(" + inspect.stack()[0][3] + ") " + "Warning: " + "Date " + str(yyyy) + "-" + str(mm) + "-" + str(dd) + " is not valid.")
         return False
 
 # Check that check digit in 11th position of Estonian ID is valid, return True/False
@@ -285,22 +285,29 @@ def is_id_check(id):
     check = calc_id_check(id[:10])
     
     if debug == 2:
-        message("(" + inspect.stack()[0][3] + ") " + "Info: ID = '" + str(id) + "'. Given check digit = " + str(id[10]) + " Calculated check digit = " + str(check))
+        message("(" + inspect.stack()[0][3] + ") " + "Info: " + "ID = '" + str(id) + "'. Given check digit = " + str(id[10]) + " Calculated check digit = " + str(check))
     
     if int(id[10]) == check:
         return True
     else:
-        if debug == 1:
-            message("(" + inspect.stack()[0][3] + ") " + "Warning ID = '" + str(id) + "'. Given check digit = " + str(id[10]) + " Calculated check digit = " + str(check))
+        if debug == 1 or debug == 2:
+            message("(" + inspect.stack()[0][3] + ") " + "Warning: " + "ID = '" + str(id) + "'. Given check digit = " + str(id[10]) + " Calculated check digit = " + str(check))
         return False
     # return int(id[10]) == calc_id_check(id[:10])
 
-# Basic check of Estonian ID validity
-def is_id_valid(id):
+# Full check of Estonian ID validity
+def is_id_valid_full(id):
     
     return (is_id_len(id) and
             is_id_digit(id) and
             is_id_century(id) and
+            is_id_date(id) and
+            is_id_check(id))
+
+# Basic check of Estonian ID validity, we know, that already, that it has length of 11 and digits only 
+def is_id_valid_basic(id):
+    
+    return (is_id_century(id) and
             is_id_date(id) and
             is_id_check(id))
 
@@ -337,15 +344,16 @@ def calculate_luhn(partial_card_number):
 # Find similar IDs in conditions that check digit remains
 # Use algorithm = "eid" (calc_id_check) or algorithm = "luhn" (luhn_checksum)
 # Return list of similarites
-def find_similar_one(id, check):
+def find_similar_one(id):
     debug = int(os.environ['DEBUG'])
     algorithm = "eid"
-    # TODO: find 'neighbour' keypresses
-    # keyboard = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
-    # keyboard_shift_left = [1, 1, 2, 3, 4, 5, 6, 7, 8, 9]
-    # keyboard_shift_right = [2, 3, 4, 5, 6, 7, 8, 9, 0, 0]
-    #
-    # TODO 2: find occasional swaps of digits, ie keypresses '2' and '1' instead of '1' and '2'
+    
+    # Use 'keyboards' to find 'neighbour' keypresses
+    # Left from '1' is '1' (key '1' is leftmost); right from '9' is '0', left from '0' is '9' and right from '0' is still '0' ('0' is rigthmost)
+    keyboard = [1, 2, 3, 4, 5, 6, 7, 8, 9, 0]
+    keyboard_shift_left = [1, 1, 2, 3, 4, 5, 6, 7, 8, 9]
+    keyboard_shift_right = [2, 3, 4, 5, 6, 7, 8, 9, 0, 0]
+    
     similarities = []
     # Consider ID as list
     id_as_list = list(id)
@@ -353,57 +361,63 @@ def find_similar_one(id, check):
     # Cycle over all digits in ID, but not the last digit (check digit)
     # Limit manually range (0, 1) or other similar to find possible errors only in few digits, probably makes overall process also much faster ...
     for i in range(0, len(id_as_list) - 1):
+        # Do deepcopy of id_as_listnot to mess with pointers
         tmp = copy.deepcopy(id_as_list)
-        # tmp[i] = keyboard_shift_left[keyboard.index(id_as_list[i])]
-        # Element must be > 0, only then we calculate smaller
-        if int(id_as_list[i]) > 0:
-            tmp[i] = str(int(id_as_list[i]) - 1)
-            # if debug == 2:
-                # message("(" + inspect.stack()[0][3] + ") " + "Info: id_as_list[" + str(i) + "] = " + id_as_list[i] + " / tmp[" + str(i) + "] = " + tmp[i])
-            smaller = ''.join(tmp)
-            # if debug == 2:
-                # message("(" + inspect.stack()[0][3] + ") " + "Info: Smaller = " + smaller)
-            smaller_check = None
-            
-            if is_id_century(smaller) and is_id_date(smaller):
-                if algorithm == "eid":
-                    smaller_check = calc_id_check(smaller[:10])
-                # TODO: implement diffeerent algorithms
-                # elif algorithm == "luhn":
-                    # smaller_check = luhn_checksum(smaller[:10])
-                else:
-                    message("(" + inspect.stack()[0][3] + ") " + "Error: no method to calculate (smaller) cheksum")
-            
-            if smaller_check == check:
-                # if debug == 2:
-                    # message("(" + inspect.stack()[0][3] + ") " + "*** Info: ID '" + id + "' smaller similar: " + smaller)
-                similarities.append(smaller)
                 
-        # tmp[i] = keyboard_shift_right[keyboard.index(int(id_as_list[i]))]
-        # Element must be < 9, only then we calculate bigger
-        if int(id_as_list[i]) < 9:
-            tmp[i] = str(int(id_as_list[i]) + 1)
+        #
+        # Method: smaller
+        #
+        # if int(id_as_list[i]) > 0:
+        # Value of ID digit id_as_list[i] must be NOT 1, this is leftmost numeric on keyboard
+        if not int(id_as_list[i]) == 1:
+            tmp[i] = str(keyboard_shift_left[keyboard.index(int(id_as_list[i]))])
+        
             # if debug == 2:
-                # message("(" + inspect.stack()[0][3] + ") " + "Info: id_as_list[" + str(i) + "] = " + id_as_list[i] + " / tmp[" + str(i) + "] = " + tmp[i])
+                # message("(" + inspect.stack()[0][3] + ") " + "Info: " + "Method: smaller " + "id_as_list[" + str(i) + "] = " + id_as_list[i] + " / tmp[" + str(i) + "] = " + tmp[i])
+            
+            # Join list back as string
+            smaller = ''.join(tmp)
+            
+            if is_id_valid_basic(smaller):
+                similarities.append(smaller)
+
+        #
+        # Method: bigger
+        #
+        # if int(id_as_list[i]) < 9:
+        # Value of ID digit id_as_list[i] must be NOT 0, this is rightmost numeric on keyboard
+        if not int(id_as_list[i]) == 0:
+            tmp[i] = str(keyboard_shift_right[keyboard.index(int(id_as_list[i]))])
+            # if debug == 2:
+                # message("(" + inspect.stack()[0][3] + ") " + "Info: " + "Method: bigger " + "id_as_list[" + str(i) + "] = " + id_as_list[i] + " / tmp[" + str(i) + "] = " + tmp[i])
+            
             bigger = ''.join(tmp)
-            # if debug == 2:
-                # message("(" + inspect.stack()[0][3] + ") " + "Info: Bigger = " + bigger)
-            bigger_check = None
             
-            if is_id_century(bigger) and is_id_date(bigger):
-                if algorithm == "eid":
-                    bigger_check = calc_id_check(bigger[:10])
-                # TODO: implement different algorithms
-                # elif algorithm == "luhn":
-                    # bigger_check = luhn_checksum(bigger[:10])
-                else:
-                   message("(" + inspect.stack()[0][3] + ") " + "Error: no method to calculate (bigger) cheksum")
-            
-            if bigger_check == check:
-                # if debug == 2:
-                    # message("(" + inspect.stack()[0][3] + ") " + "*** Info: ID '" + id + "' bigger similar: " + bigger)
+            if is_id_valid_basic(bigger):
                 similarities.append(bigger)
-        # END FOR
+        
+        # Restore tmp[i]
+        tmp[i] = str(id_as_list[i])
+        
+        #
+        # Method: swap
+        #
+        # No reason to swap equal digits
+        if not tmp[i] == tmp[i+1]:
+            tmp[i], tmp[i+1] = tmp[i+1], tmp[i]
+            # if debug == 2:
+                # message("(" + inspect.stack()[0][3] + ") " + "Info: " + "Method: swap " + "tmp[" + str(i) + "] = " + tmp[i] + " and tmp[" + str(i+1) + "] = " + tmp[i+1])
+            
+            swap = ''.join(tmp)
+            
+            # Swap back
+            # Actually, no need as we restore full tmp in the beginning of cycle
+            # tmp[i], tmp[i+1] = tmp[i+1], tmp[i]
+            
+            if is_id_valid_basic(swap):
+                similarities.append(swap)
+        
+# END FOR
 
     return similarities
 
@@ -431,12 +445,7 @@ def what_to_do():
             print(title)
             for i in range(0, len(choices)):
                 print("\t" + choices[i])
-            # print("\t0 = Exit")
-            # print("\t1 = Check ID validity")
-            # print("\t2 = Calculate ID check digit")
-            # print("\t3 = Find similar IDs of one ID")
-            # print("\t4 = Find similar IDs of random ID")
-            # print("\t5 = Find similar IDs of range of IDs")
+            
             choice = sanitised_input(msg, int, 0, 5)
     
     return choice
@@ -468,13 +477,7 @@ def what_algorithm():
             print(title)
             for i in range(0, len(choices)):
                 print("\t" + choices[i])
-            print("Choices: ")
-            print("\t1 = Algorithm EID (https://et.wikipedia.org/wiki/Isikukood)")
-            print("\t2 = Algorithm LUHN (https://en.wikipedia.org/wiki/Luhn_algorithm)")
-            # TODO: Implement more algorithms
-            # print("\t3 = Algorithm LUHN MOD N (https://en.wikipedia.org/wiki/Luhn_mod_N_algorithm)")
-            # print("\t4 = Algorithm VERHOEFF (https://en.wikipedia.org/wiki/Verhoeff_algorithm)")
-            # print("\t5 = Algorithm DAMM (https://en.wikipedia.org/wiki/Damm_algorithm)")
+        
         algorithm = sanitised_input(msg, int, 0, 2)
     
     return algorithm
@@ -503,12 +506,12 @@ def calc_sample_speed():
     debug = int(os.environ['DEBUG'])
     sample_sec = 2
     sample_eid10 = '4321123456'
-    sample_check_digit = 9
+    sample_check_digit = '9'
     
     if debug == 2:
-        message("Info: Calculate approximate speed of system by executing find_similar_one within " + str(sample_sec) + " seconds with dummy data")
+        message("Info: " + "Calculate approximate speed of system by executing find_similar_one within " + str(sample_sec) + " seconds with dummy data")
     
-    # Store current debug level and do set temporary debug_level = 0
+    # Keep current debug level and do set temporary debug level = 0
     tmp_debug = os.environ['DEBUG']
     os.environ['DEBUG'] = '0'
     
@@ -516,7 +519,7 @@ def calc_sample_speed():
     start_time = time.time()
     
     while time.time() - start_time < sample_sec:
-        find_similar_one(sample_eid10, sample_check_digit)
+        find_similar_one(sample_eid10 + sample_check_digit)
         sample_nof_id += 1
     
     sample_time = time.time() - start_time
@@ -541,21 +544,21 @@ def main_check_id_validity():
         id = sanitised_input(msg, str)
         
     # For test purposes, some unit tests
-    # id = "" # False, Empty
-    # id = "0" # False, Length < 11
-    # id = "123456789012" # False, Length > 11
-    # id = "ABCDEFGHIJK" # False, Nodigits
-    # id = "00000000000" # False, Century < 3
-    # id = "70000000000" # False, Century > 6
-    # id = "30000000000" # False, Date not valid
-    # id = "30099000000" # False, Month not valid
-    # id = "30012990000" # False, Day not valid
-    # id = "30012310000" # False, Check not valid
-    # id = "30001010004" # True, ID is valid
+    # ID = '' # Validity = False, Empty
+    # ID = '0' # Validity = False, Length < 11
+    # ID = '123456789012' # Validity = False, (is_id_len) Warning: ID '123456789012'. Length = 12 is not 11
+    # ID = 'ABCDEFGHIJK' # Validity = False, (is_id_digit) Warning: ID 'ABCDEFGHIJK'. Digit = False
+    # ID = '00000000000' # Validity = False, (is_id_century) Warning: ID '00000000000'. Century = 0
+    # ID = '70000000000' # Validity = False, (is_id_century) Warning: ID '70000000000'. Century = 7
+    # ID = '30000000000' # Validity = False, (is_id_date) Warning: Date 1900-0-0 is not valid.
+    # ID = '30099000000' # Validity = False, (is_id_date) Warning: Date 1900-99-0 is not valid.
+    # ID = '30012990000' # Validity = False, (is_id_date) Warning: Date 1900-12-99 is not valid.
+    # ID = '30012310000' # Validity = False, (is_id_check) Warning: ID = '30012310000'. Given check digit = 0 Calculated check digit = 9
+    # ID = '30001010004' # Validity = True
 
     # if id == None: # button Cancel pressed
     if not (id == "0" or id == "" or id == None):
-        valid = is_id_valid(id)
+        valid = is_id_valid_full(id)
         # message("*** Result: " + "ID = '" + str(id) + "'. Validity = " + str(valid))
     
     return id, valid
@@ -574,12 +577,17 @@ def main_calculate_id_check_digit():
             id = sanitised_input(msg, str)
         
         # For test purposes, some unit tests
-        # id = 36210010120 check digit = 0
-        # id = 46210010120 check digit = 0
-        # id = 51107121760 check digit = 0
-        # id = 61107121760 check digit = 0
-        # id = 39303312282 check digit = 2
-        
+        # ID = '' check digit = 'None'. Full ID = 'None'.
+        # ID = '1' Warning: Length of ID must be at least 10 and it must include only digits. Please re-enter.
+        # ID = 'a' Warning: Length of ID must be at least 10 and it must include only digits. Please re-enter.
+        # ID = '0000000000' check digit = '0'. Full ID = '00000000000'.
+        # ID = '9999999999' check digit = '7'. Full ID = '99999999997'.
+        # ID = '36210010120' check digit = '0'. Full ID = '362100101200'. Warning: Length of ID is 11. Will use only first 10 digits to calculate check digit, ignore the rest.
+        # ID = '46210010120' check digit = '0'. Full ID = '462100101200'. Warning: Length of ID is 11. Will use only first 10 digits to calculate check digit, ignore the rest.
+        # ID = '51107121760' check digit = '0'. Full ID = '511071217600'. Warning: Length of ID is 11. Will use only first 10 digits to calculate check digit, ignore the rest.
+        # ID = '61107121760' check digit = '0'. Full ID = '611071217600'. Warning: Length of ID is 11. Will use only first 10 digits to calculate check digit, ignore the rest.
+        # ID = '39303312282' check digit = '2'. Full ID = '393033122822'. Warning: Length of ID is 11. Will use only first 10 digits to calculate check digit, ignore the rest.
+
         # if id == None: # button Cancel pressed
         if not (id == "0" or id == "" or id == None):
             length = len(id)
@@ -587,13 +595,13 @@ def main_calculate_id_check_digit():
             
             if valid:
                 if length > 10:
-                    message("Warning: Length of ID is " + str(length) + ". Will use only first 10 digits to calculate check digit, ignore the rest.")
+                    message("Warning: " + "Length of ID is " + str(length) + ". Will use only first 10 digits to calculate check digit, ignore the rest.")
                 
                 check = calc_id_check(id[:10])
                 # message("*** Result: " + "ID = '" + str(id[0:10]) + "' check digit = '" + str(check) + "'. Full ID = '" + str(id[0:10]) + str(check) + "'.")
             
             else:
-                message("Warning: Length of ID must be at least 10 and it must include only digits. Please re-enter.")
+                message("Warning: " + "Length of ID must be at least 10 and it must include only digits. Please re-enter.")
         
         else:
             # 0 or nothing entered or Cancel pressed, break from cycle
@@ -614,16 +622,21 @@ def main_find_similar_ids():
             id = sanitised_input(msg, str)
 
         # For test purposes, some unit tests
-        # id = 36210010120 -- Similarities: ['46210010120', '36210010130']
-        # id = 46210010120 -- Similarities: ['36210010120', '46210010110']
-        # id = 51107121760 -- Similarities: ['61107121760', '51107121770']
-        # id = 61107121760 -- Similarities: ['51107121760', '61107121750']
-        # id = 39303312282 -- Similarities: ['39303313282']
-        # id = "39303312783" # Similarities not found.
-        # id = "39303312780" # Is not valid ID
+        # ID: '' = None # Similarities not found.
+        # ID: '1' is not valid ID. Please re-enter. # (is_id_len) Warning: ID '1'. Length = 1 is not 11
+        # ID: 'a' is not valid ID. Please re-enter. # (is_id_len) Warning: ID 'a'. Length = 1 is not 111
+        # ID: 'aaaaaaaaaaa' is not valid ID. Please re-enter. # (is_id_digit) Warning: ID 'aaaaaaaaaaa'. Digit = False
+        # ID: '11111111111' is not valid ID. Please re-enter. # (is_id_century) Warning: ID '11111111111'. Century = 1
+        # ID: '39303312780' is not valid ID. Please re-enter. # (is_id_check) Warning ID = '39303312780'. Given check digit = 0 Calculated check digit = 3
+        # ID: '39303312783' = None # Similarities not found.
+        # ID: '36210010120' = ['36201010120', '36210010130', '46210010120']
+        # ID: '46210010120' = ['36210010120', '46210010110']
+        # ID: '51107121760' = ['51107112760', '51107121770', '61107121760']
+        # ID: '61107121760' = ['51107121760', '61107121750']
+        # ID: '39303312282' = ['39303313282']
         
         if not (id == "0" or id == "" or id == None):
-            valid = is_id_valid(id)
+            valid = is_id_valid_full(id)
         else:
             # Return empty set of similarities
             return id, id_similarities
@@ -632,13 +645,13 @@ def main_find_similar_ids():
            message("Error: " + "ID '" + str(id) + "' is not valid ID. Please re-enter.")
         
     # Valid ID was entered
-    check = calc_id_check(id)
-    tmp = find_similar_one(id, check)
+    # check = calc_id_check(id)
+    tmp = find_similar_one(id)
     if tmp:
         id_similarities[id] = sorted(tmp)
-        # message("*** Result: ID: '" + str(id) + "' = " + str(id_similarities[id])) 
+        # message("*** Result: " + "ID: '" + str(id) + "' = " + str(id_similarities[id])) 
     # else:
-        # message("*** Result: ID: '" + str(id) + "' -- No similarities found.")
+        # message("*** Result: " + "ID: '" + str(id) + "' -- No similarities found.")
 
     return id, id_similarities
 
@@ -647,7 +660,12 @@ def main_find_similar_ids_of_random_id():
     valid = False
     id_similarities = {}
     min_century, max_century, min_year, max_year, min_month, max_month, min_day, max_day, min_sequence, max_sequence = get_defaults()
-    
+
+    # For test purposes, some unit tests
+    # ID: '58901081421' = ['58901081521']
+    # ID: '48608052390' = ['48608053290']
+    # ID: '38302111067' = ['38202111067', '38302112067']
+
     while not valid:
         # random.randint - generate pseudo-random century/date
         century = random.randint(min_century, max_century)
@@ -658,16 +676,16 @@ def main_find_similar_ids_of_random_id():
         id10 = str(century) + str(year).zfill(2) + str(month).zfill(2) + str(day).zfill(2) + str(sequence).zfill(3)
         check = calc_id_check(id10)
         id = str(id10) + str(check)
-        valid = is_id_valid(id)
+        valid = is_id_valid_full(id)
 
     message("Info: " + "Random ID = " + str(id))
-    tmp = find_similar_one(id, check)
+    tmp = find_similar_one(id)
     
     if tmp:
         id_similarities[id] = sorted(tmp)
-        # message("*** Result: ID: '" + str(id) + "' = " + str(id_similarities[id])) 
+        # message("*** Result: " + "ID: '" + str(id) + "' = " + str(id_similarities[id])) 
     # else:
-        # message("*** Result: ID: '" + str(id) + "' -- No similarities found.")
+        # message("*** Result: " + "ID: '" + str(id) + "' -- No similarities found.")
     
     return id, id_similarities
 
@@ -691,27 +709,27 @@ def main_find_similar_ids_of_range_id():
     
     if min_century == None or max_century == None:
         message("Warning: " + "Cancel pressed.")
-        return {}
+        return None, None, {}
     
     min_year, max_year = ask_start_end("year", min_year, max_year)
     if min_year == None or max_year == None:
         message("Warning: " + "Cancel pressed.")
-        return {}
+        return None, None, {}
     
     min_month, max_month = ask_start_end("month", min_month, max_month)
     if min_month == None or max_month == None:
         message("Warning: " + "Cancel pressed.")
-        return {}
+        return None, None, {}
     
     min_day, max_day = ask_start_end("day", min_day, max_day)
     if min_day == None or max_day == None:
         message("Warning: " + "Cancel pressed.")
-        return {}
+        return None, None, {}
     
     min_sequence, max_sequence = ask_start_end("sequence", min_sequence, max_sequence)
     if min_sequence == None or max_sequence == None:
         message("Warning: " + "Cancel pressed.")
-        return {}
+        return None, None, {}
 
     min_id = str(min_century) + str(min_year).zfill(2) + str(min_month).zfill(2) + str(min_day).zfill(2) + str(min_sequence).zfill(3)
     max_id = str(max_century) + str(max_year).zfill(2) + str(max_month).zfill(2) + str(max_day).zfill(2) + str(max_sequence).zfill(3)
@@ -736,7 +754,7 @@ def main_find_similar_ids_of_range_id():
         m, s = divmod(estimated_time_seconds, 60)
         h, m = divmod(m, 60)
         d, h = divmod(h, 24)
-        msg = "Warning: number of ID-s to be calculated is at least " + group(nof_id) + ". It might take a looooooong time (appr. " + "%d days %d hrs %d min %d sec" % (d, h, m, s) + ")"
+        msg = "Warning: " + "number of ID-s to be calculated is at least " + group(nof_id) + ". It might take a looooooong time (appr. " + "%d days %d hrs %d min %d sec" % (d, h, m, s) + ")"
     
         if nof_id > 31000 or estimated_time_seconds > 60:
             if debug:
@@ -745,15 +763,15 @@ def main_find_similar_ids_of_range_id():
                 # Ensure the message is printed into console even if debug level is not set
                 print(msg)
             
-            msg = "Do you want to continue? "
+            msg = "Do you want to continue (Y/n)? "
             if debug >= 3:
-                result = ccbox(msg, "Please confirm") # show a Continue/Cancel dialog
+                result = ccbox(msg, "Please confirm", choices=('YES', 'no')) # show a Continue/Cancel dialog
             else:
                 result = query_yes_no(msg)
         
             if not result: # True (for continue) or False (for cancel)
                 # Get out of current elif, continue with main while-cycle
-                return {}
+                return min_id, max_id, {}
                 # sys.exit("OK, exiting.")
 
     message("Info: " + "Calculating ... Press Enter/OK to start")
@@ -761,30 +779,30 @@ def main_find_similar_ids_of_range_id():
     
     for century in range (min_century, max_century + 1): # (3, 7):
         if debug == 2:
-            message("Info: Century = " + str(century))
+            message("Info: " + "Century = " + str(century))
         
         for year in range (min_year, max_year + 1): # (1, 100):
             if debug == 2:
-                message("Info: Year = " + str(year))
+                message("Info: " + "Year = " + str(year))
             # Calculate year as YYYY according to century
             yyyy = (17 + (century + 1) // 2) * 100 + year
             for month in range (min_month, max_month + 1): # (1, 13):
                 if debug == 2:
-                    message("Info: Month = " + str(month))
+                    message("Info: " + "Month = " + str(month))
                     
                 for day in range (min_day, max_day + 1): # (1, 32):
                     if debug == 2:
-                        message("Info: Day = " + str(day))
+                        message("Info: " + "Day = " + str(day))
                         
                     if is_date_valid (yyyy, month, day):
                         if debug == 2:
-                            message("Info: Valid date: " + str(day) + "." + str(month) + "." + str(yyyy))
+                            message("Info: " + "Valid date: " + str(day) + "." + str(month) + "." + str(yyyy))
                             
                         if (max_sequence > min_sequence):
                             print(str(century) + str(year).zfill(2) + str(month).zfill(2) + str(day).zfill(2) + str(min_sequence).zfill(3), end = "")
                             
                         for sequence in range (min_sequence, max_sequence + 1): # (0, 1000):
-                            # message("Info: Sequence = " + str(sequence))
+                            # message("Info: " + "Sequence = " + str(sequence))
                             # Print progress bar ...
                             if not sequence % 10:
                                 print(".", end = "")
@@ -798,57 +816,49 @@ def main_find_similar_ids_of_range_id():
                             # 
                             # Call of find_similar_one
                             # ----------
-                            tmp = find_similar_one(id, check_id)
+                            tmp = find_similar_one(id)
                             # ----------
                             #
                             if tmp:
                                 id_similarities[id] = sorted(tmp)
                                 nof_id_similarities += 1
                                 if debug == 2:
-                                    message("Info: ID: " + "id_similarities[" + str(id) + "] = " + str(id_similarities[id])) 
+                                    message("Info: " + "ID: " + "id_similarities[" + str(id) + "] = " + str(id_similarities[id])) 
                             
                             else:
                                 if debug == 2:
-                                    message("Info: ID: " + str(id) + " -- No similarities found.")
+                                    message("Info: " + "ID: " + str(id) + " -- No similarities found.")
                         # End of for cycle
                         
                     else:
                         # Date was not valid, set sequence as negative. We will use it in following not to print out end of sequence
                         sequence = -1
                         if debug == 2:
-                            message("Info: Date is not valid: " + str(day) + "." + str(month) + "." + str(year))
+                            message("Info: " + "Date is not valid: " + str(day) + "." + str(month) + "." + str(year))
                         
                     # Check sequence. If sequence is negative, we will not print out end of sequence
                     if (max_sequence > min_sequence) and sequence >=0:
                         print(str(max_sequence) + " - 100%")
                         
                     if debug == 2:
-                        message("Info: End of day: " + str(day))
+                        message("Info: " + "End of day: " + str(day))
                     
                 if debug == 2:
-                    message("Info: End of month: " + str(month))
+                    message("Info: " + "End of month: " + str(month))
                 
             if debug == 2:
-                message("Info: End of year: " + str(year))
+                message("Info: " + "End of year: " + str(year))
             
         if debug == 2:
-            message("Info: End of century: " + str(century))
+            message("Info: " + "End of century: " + str(century))
         
     if debug == 2:
-        message("Info: END")
+        message("Info: " + "END")
 
     end_time = time.time()
         
-    # message("*** Result: ID range '" + str(min_id) + "' - '" + str(max_id) + "' - found " + str(nof_id_similarities) + " similarities")
-    # message("*** Result: write file: " + min_id + "-" + max_id + "_similarities_id.json")
-    # with open(min_id + "-" + max_id + "_similarities_id.json", 'w') as fp:
-        # json.dump(id_similarities, fp, indent = 4)
-    # f = open(min_id + "-" + max_id + "_similarities_id.txt", "w")
-    # f.write(str(id_similarities))
-    # f.close()
-        
     if start_time:
-        message("Result: --- %s seconds ---" % (end_time - start_time))
+        message("Result: " + "--- %s seconds ---" % (end_time - start_time))
 
     return min_id, max_id, id_similarities
 
@@ -867,7 +877,7 @@ choice = ''
 while True:
     choice = what_to_do()
     if debug == 2:
-        message("Info: Your choice was: " + str(choice))
+        message("Info: " + "Your choice was: " + str(choice))
 
     if choice == 0:
         # Exit
@@ -876,7 +886,7 @@ while True:
     
     # TODO: implement different algorithms
     # algorithm = what_algorithm()
-    # print("Algorithm is: " + str(algorithm))
+    # message("Info: " + "Algorithm is: " + str(algorithm))
     
     id = min_id = max_id = None
     check = None
@@ -894,24 +904,48 @@ while True:
     # Find similar IDs of one ID (algorithm EID)
     elif choice == 3:
         id, id_similarities = main_find_similar_ids()
-        message("*** Result: ID: '" + str(id) + "' = " + str(id_similarities.get(id, None)))
+        message("*** Result: " + "ID: '" + str(id) + "' = " + str(id_similarities.get(id, None)))
 
     # Find similar IDs of random ID (algorithm EID)
     elif choice == 4:
         id, id_similarities = main_find_similar_ids_of_random_id()
-        message("*** Result: ID: '" + str(id) + "' = " + str(id_similarities.get(id, None)))
+        message("*** Result: " + "ID: '" + str(id) + "' = " + str(id_similarities.get(id, None)))
 
     # Find similar IDs of range of IDs
     elif choice == 5:
         min_id, max_id, id_similarities = main_find_similar_ids_of_range_id()
-        message("*** Result: ID range '" + str(min_id) + "' - '" + str(max_id) + "' - found " + str(len(id_similarities)) + " similarities")
-        message("*** Result: write file: " + min_id + "-" + max_id + "_similarities_id.json")
-        with open(min_id + "-" + max_id + "_similarities_id.json", 'w') as fp:
-            json.dump(id_similarities, fp, indent = 4)
+        message("*** Result: " + "ID range '" + str(min_id) + "' - '" + str(max_id) + "' - found " + str(len(id_similarities)) + " similarities")
+        
+        # If found some similarities
+        if len(id_similarities):
+            filename = min_id + "-" + max_id + "_similarities_id.json"
+            message("*** Result: " + "write file: " + filename)
+            
+            # If filename exists
+            result = True
+            if os.path.exists(filename):
+                msg = "Warning: " + filename + " exists.\nDo you want to overwrite (Y/n)? "
+                if debug >= 3:
+                    result = ccbox(msg, "Please confirm", choices=('YES', 'no')) # show a Continue/Cancel dialog
+                else:
+                    result = query_yes_no(msg)
+            
+            # Ask for new filename
+            if result == False:
+                msg = "Enter filename: "
+                if debug >= 3:
+                    filename = filesavebox(msg=msg, title=msg, default=filename, filetypes=None)
+                else:
+                    filename = sanitised_input(msg, str)
+            
+            # Save into file
+            if not filename == None:
+                with open(filename, 'w') as fp:
+                    json.dump(id_similarities, fp, indent = 4)
         
     # All the rest of choices if in whatever reason they came through until here
     else:
-        message("Unknown choice: " + str(choice))
+        message("Error: " + "Unknown choice: " + str(choice))
 
 '''
 # TODO: different algorithms to implement
@@ -922,22 +956,21 @@ nof_luhn_similarities = 0 # len(luhn_similarities)
 check_luhn = luhn_checksum(str(id10))
 # compile together first 10 digits of ID and Estonian-specific check_id
 luhn = str(id10) + str(check_luhn)
-tmp = find_similar_one(luhn, check_luhn, "luhn")
+tmp = find_similar_one(luhn, "luhn")
 if tmp:
     luhn_similarities[luhn] = sorted(tmp)
-    print("Info: LUHN: " + "luhn_similarities[" + str(luhn) + "] = " + str(luhn_similarities[luhn]))
+    print("Info: " + "LUHN: " + "luhn_similarities[" + str(luhn) + "] = " + str(luhn_similarities[luhn]))
     nof_luhn_similarities += 1
 else:
-    message("Info: LUHN: " + str(luhn) + " -- Similarities not found.")
+    message("Info: " + "LUHN: " + str(luhn) + " -- Similarities not found.")
 '''
 '''
-print ("LUHN: found " + str(nof_luhn_similarities) + " similarities")
-print("Info: write file: " + min_id + "-" + max_id + "_similarities_luhn.json")
+print ("Info" + "LUHN: found " + str(nof_luhn_similarities) + " similarities")
+print("Info: " + "write file: " + min_id + "-" + max_id + "_similarities_luhn.json")
 with open(min_id + "-" + max_id + "_similarities_luhn.json", 'w') as fp:
     json.dump(luhn_similarities, fp, indent = 4)
 # f = open(min_id + "-" + max_id + "_similarities_luhn.txt", "w")
 # f.write(str(luhn_similarities))
 # f.close()
 '''
-
 
