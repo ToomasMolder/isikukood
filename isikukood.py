@@ -4,7 +4,7 @@
 ##   TODO: and according to Luhn algorithm https://en.wikipedia.org/wiki/Luhn_algorithm
 # 
 # Author: Toomas Mölder <toomas.molder@gmail.com>, +372 5522000
-# Last modified: 2017-05-31
+# Last modified: 2017-06-02
 #
 # NB! Might be buggy and crappy, written for own purposes
 # TODO: better logic of input from user
@@ -34,7 +34,7 @@ start_time = ""
 # 3 = GUI
 # 4 = ... (for future use)
 #
-os.environ['DEBUG'] = '3'
+os.environ['DEBUG'] = '0'
 
 def message(msg):
     debug = int(os.environ['DEBUG'])
@@ -42,7 +42,7 @@ def message(msg):
     if debug >=3:
         # Do it with easygui
         title = msg.split(':')[0]
-        tmp = ''.join(msg.split(':')[1:])
+        tmp = ''.join(msg.split(':')[1:]).strip()
         msgbox(tmp, title, ok_button="OK")
     else:
         # NB! msg MUST include keywords 'Info' or 'Warning' or 'Error' to be printed out
@@ -688,7 +688,11 @@ def main_find_similar_ids_of_random_id():
     
     return id, id_similarities
 
-def main_find_similar_ids_of_range_id():
+def main_find_similar_ids_of_range_id(pid):
+    # Argument pid is used to creat temporary files within process
+    # Keep these filenames within list and return to main function
+    tmp_filenames = []
+    
     id_similarities = {}
     nof_id_similarities = 0 # len(id_similarities)
     min_century, max_century, min_year, max_year, min_month, max_month, min_day, max_day, min_sequence, max_sequence = get_defaults()
@@ -705,34 +709,38 @@ def main_find_similar_ids_of_range_id():
         
     # Ask century, year, month, day and sequence from user
     min_century, max_century = ask_start_end("century", min_century, max_century)
+    min_id = max_id = None
     
     if min_century == None or max_century == None:
         message("Warning: " + "Cancel pressed.")
-        return None, None, {}
+        return min_id, max_id, nof_id_similarities, tmp_filenames
     
     min_year, max_year = ask_start_end("year", min_year, max_year)
     if min_year == None or max_year == None:
         message("Warning: " + "Cancel pressed.")
-        return None, None, {}
+        return min_id, max_id, nof_id_similarities, tmp_filenames
     
     min_month, max_month = ask_start_end("month", min_month, max_month)
     if min_month == None or max_month == None:
         message("Warning: " + "Cancel pressed.")
-        return None, None, {}
+        return min_id, max_id, nof_id_similarities, tmp_filenames
     
     min_day, max_day = ask_start_end("day", min_day, max_day)
     if min_day == None or max_day == None:
         message("Warning: " + "Cancel pressed.")
-        return None, None, {}
+        return min_id, max_id, nof_id_similarities, tmp_filenames
     
     min_sequence, max_sequence = ask_start_end("sequence", min_sequence, max_sequence)
     if min_sequence == None or max_sequence == None:
         message("Warning: " + "Cancel pressed.")
-        return None, None, {}
+        return min_id, max_id, nof_id_similarities, tmp_filenames
 
     min_id = str(min_century) + str(min_year).zfill(2) + str(min_month).zfill(2) + str(min_day).zfill(2) + str(min_sequence).zfill(3)
     max_id = str(max_century) + str(max_year).zfill(2) + str(max_month).zfill(2) + str(max_day).zfill(2) + str(max_sequence).zfill(3)
     message("Info: " + "Similarities of ID-s to find: from " + min_id + " to " + max_id)
+    
+    # start_eid10 is used to create temporary files
+    start_eid10 = min_id
 
     nof_id = (max_century - min_century + 1) \
         * (max_year - min_year + 1) \
@@ -753,8 +761,9 @@ def main_find_similar_ids_of_range_id():
         m, s = divmod(estimated_time_seconds, 60)
         h, m = divmod(m, 60)
         d, h = divmod(h, 24)
-        msg = "Warning: " + "number of ID-s to be calculated is at least " + group(nof_id) + ". It might take a looooooong time (appr. " + "%d days %d hrs %d min %d sec" % (d, h, m, s) + ")"
+        msg = "Warning: " + "Number of ID-s to be calculated is at least " + group(nof_id) + ".\nIt might take a looooooong time (appr. " + "%d days %d hrs %d min %d sec" % (d, h, m, s) + ")"
     
+        # More than one month to calculate or computer slower than 60 seconds
         if nof_id > 31000 or estimated_time_seconds > 60:
             if debug:
                 message(msg)
@@ -762,15 +771,16 @@ def main_find_similar_ids_of_range_id():
                 # Ensure the message is printed into console even if debug level is not set
                 print(msg)
             
-            msg = "Do you want to continue (Y/n)? "
+            msg = "Do you want to continue? "
+            choices = ('YES', 'no')
             if debug >= 3:
-                result = ccbox(msg, "Please confirm", choices=('YES', 'no')) # show a Continue/Cancel dialog
+                result = ynbox(msg, "Please confirm (" + ', '.join(choices) + ")") # show a Yes/no dialog
             else:
                 result = query_yes_no(msg)
         
             if not result: # True (for continue) or False (for cancel)
                 # Get out of current elif, continue with main while-cycle
-                return min_id, max_id, {}
+                return min_id, max_id, nof_id_similarities, tmp_filenames
                 # sys.exit("OK, exiting.")
 
     message("Info: " + "Calculating ... Press Enter/OK to start")
@@ -783,6 +793,12 @@ def main_find_similar_ids_of_range_id():
         for year in range (min_year, max_year + 1): # (1, 100):
             if debug == 2:
                 message("Info: " + "Year = " + str(year))
+            
+            # start_eid10 is used to create temporary files for found similarities of every year
+            # We do it to keep need for RAM as low as possible
+            # This will be done only on accuracy / level of year, therefor we do use min_month, min_day and min_sequence
+            start_eid10 = str(century) + str(year).zfill(2) + str(min_month).zfill(2) + str(min_day).zfill(2) + str(min_sequence).zfill(3)
+            
             # Calculate year as YYYY according to century
             yyyy = (17 + (century + 1) // 2) * 100 + year
             for month in range (min_month, max_month + 1): # (1, 13):
@@ -798,7 +814,7 @@ def main_find_similar_ids_of_range_id():
                             message("Info: " + "Valid date: " + str(day) + "." + str(month) + "." + str(yyyy))
                             
                         if (max_sequence > min_sequence):
-                            print(str(century) + str(year).zfill(2) + str(month).zfill(2) + str(day).zfill(2) + str(min_sequence).zfill(3), end = "")
+                            print(str(century) + str(year).zfill(2) + str(month).zfill(2) + str(day).zfill(2) + " " + str(min_sequence).zfill(3), end = "")
                             
                         for sequence in range (min_sequence, max_sequence + 1): # (0, 1000):
                             # message("Info: " + "Sequence = " + str(sequence))
@@ -838,6 +854,7 @@ def main_find_similar_ids_of_range_id():
                     # Check sequence. If sequence is negative, we will not print out end of sequence
                     if (max_sequence > min_sequence) and sequence >=0:
                         print(str(max_sequence) + " - 100%")
+                        sys.stdout.flush()
                         
                     if debug == 2:
                         message("Info: " + "End of day: " + str(day))
@@ -848,6 +865,18 @@ def main_find_similar_ids_of_range_id():
             if debug == 2:
                 message("Info: " + "End of year: " + str(year))
             
+            # Keep similarities within temporary file
+            # start_eid10 was initiated earlier, id10 is current id to find similarities within cycle
+            # We do it to keep need for RAM as low as possible
+            # This will be done only on accuracy / level of year
+            tmp_filename = "tmp_" + str(pid) + "_" + start_eid10 + "-" + id10 + "_similarities_id.json"
+            with open(tmp_filename, 'w') as fp:
+                    json.dump(id_similarities, fp, indent = 4)
+            tmp_filenames.append(tmp_filename)
+            
+            # Flush similarities
+            id_similarities = {}
+        
         if debug == 2:
             message("Info: " + "End of century: " + str(century))
         
@@ -857,9 +886,31 @@ def main_find_similar_ids_of_range_id():
     end_time = time.time()
         
     if start_time:
-        message("Result: " + "--- %s seconds ---" % (end_time - start_time))
+        message("*** Result: " + "--- %s seconds ---" % (end_time - start_time))
 
-    return min_id, max_id, id_similarities
+    return min_id, max_id, nof_id_similarities, tmp_filenames
+
+# Find similarities with maximum length
+# TODO: it is not the best solution as it keeps also all current max length elements, growing from first until to final max
+# ... but we will remove them within additional cycle. It seems to me little bit crappy
+def GetMaxLen(id_similarities):
+    max_length = 0
+    tmp_id_similarities = {}
+    
+    for key, value in id_similarities.items():
+            if len(value) >= max_length:
+                    max_length = len(value)
+                    tmp_id_similarities[key] = value
+                    # max_key = key
+                    # max_value = value
+    
+    # Another cycle to remove shorter elements from the beginning ...
+    max_id_similarities = {}
+    for key, value in tmp_id_similarities.items():
+        if len(value) == max_length:
+            max_id_similarities[key] = value
+    
+    return max_length, max_id_similarities
 
 ######################################################################
 # MAIN
@@ -874,6 +925,11 @@ choice = ''
 #
 
 while True:
+    # Get current process id to be used as identifier in temporary files during choice = 5
+    pid = os.getpid()
+    if debug == 2:
+        message("Info: " + "Current PID = " + str(pid))
+    
     choice = what_to_do()
     if debug == 2:
         message("Info: " + "Your choice was: " + str(choice))
@@ -912,20 +968,27 @@ while True:
 
     # Find similar IDs of range of IDs
     elif choice == 5:
-        min_id, max_id, id_similarities = main_find_similar_ids_of_range_id()
-        message("*** Result: " + "ID range '" + str(min_id) + "' - '" + str(max_id) + "' - found " + str(len(id_similarities)) + " similarities")
+        # Get current process id to be used as identifier in temporary files during choice = 5
+        # Use it as argument for main_find_similar_ids_of_range_id()
+        pid = os.getpid()
+        if debug == 2:
+            message("Info: " + "Current PID = " + str(pid))
+    
+        min_id, max_id, nof_id_similarities, tmp_filenames = main_find_similar_ids_of_range_id(pid)
+        message("*** Result: " + "ID range '" + str(min_id) + "' - '" + str(max_id) + "' - found " + str(nof_id_similarities) + " similarities")
         
         # If found some similarities
-        if len(id_similarities):
+        if nof_id_similarities > 0:
             filename = min_id + "-" + max_id + "_similarities_id.json"
             message("*** Result: " + "write file: " + filename)
             
             # If filename exists
             result = True
             if os.path.exists(filename):
-                msg = "Warning: " + filename + " exists.\nDo you want to overwrite (Y/n)? "
+                msg = "Warning: " + filename + " exists.\nDo you want to overwrite? "
+                choices = ('YES', 'no')
                 if debug >= 3:
-                    result = ccbox(msg, "Please confirm", choices=('YES', 'no')) # show a Continue/Cancel dialog
+                    result = ynbox(msg, "Please confirm (" + ', '.join(choices) + ")") # show a Yes/no dialog
                 else:
                     result = query_yes_no(msg)
             
@@ -938,10 +1001,32 @@ while True:
                     filename = sanitised_input(msg, str)
             
             # Save into file
+            # Do cycle over tmp_filenames to read
             if not filename == None:
+                id_similarities = {}
+                for tmp_filename in tmp_filenames:
+                    with open(tmp_filename, "r") as fi:
+                        tmp_id_similarities = json.load(fi)
+                    
+                    id_similarities.update(tmp_id_similarities)
+                    # Remove tmp_filenames
+                    os.remove(tmp_filename)
+                    
                 with open(filename, 'w') as fp:
                     json.dump(id_similarities, fp, indent = 4)
-        
+                
+                # Find similarities with maximum length
+                max_length, max_id_similarities = GetMaxLen(id_similarities)
+                msg = "*** Result: " + "Max number of similarities = " + str(max_length) + " for IDs:"
+                
+                for key, value in max_id_similarities.items():
+                    msg = msg + "\n" + "\"" + key + "\"" + ": " + str(value)
+                
+                message(msg)
+                
+                # Temporary solution - Exit immediately
+                sys.exit(0)
+            
     # All the rest of choices if in whatever reason they came through until here
     else:
         message("Error: " + "Unknown choice: " + str(choice))
