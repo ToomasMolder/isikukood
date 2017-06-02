@@ -1,7 +1,7 @@
 # isikukood
 Stuff around Estonian ID (Eesti isikukood), scripts in Python
 
-Main program: isikukood.py
+Main program: [isikukood.py](isikukood.py)
 
 Choices:
 
@@ -24,10 +24,10 @@ It is possible to run script with different debug level, controlled with os.envi
     # 3 = GUI
     # 4 = ... (for future use)
 
-To use os.environ['DEBUG'] = '3' # GUI, easygui.py is required in running directory, original source: http://easygui.sourceforge.net/
+To use os.environ['DEBUG'] = '3' # GUI, [easygui.py](easygui.py) is required in running directory, original source: http://easygui.sourceforge.net/
 
 The most complicated part is 5 - Find, how many similarities in ID (isikukood) is available when using check digit calculation algorithm
-   according to Estonian ID https://et.wikipedia.org/wiki/Isikukood
+   according to [article in Wikipedia about Estonian ID](https://et.wikipedia.org/wiki/Isikukood)
 
 According to user input, calculations might take a looooooong time (many hours or even couple of days). Warning is displayed and cancel of script is possible.
 
