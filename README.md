@@ -31,15 +31,15 @@ The most complicated part is 5 - Find, how many similarities in ID (isikukood) i
 
 According to user input, calculations might take a looooooong time (many hours or even couple of days). Warning is displayed and cancel of script is possible.
 
+Some sample result files are added into repository (sample_cyymmdd000-cyymmdd999_similarities_id.json)
+
 User input can be given in form of:
 
-    cat input.txt | python3 isikukood.py
+    cat sample_input.txt | python3 isikukood.py
 
 Additionally, standard output can be redirected into file and script can be run as background process:
 
-    cat input.txt | python3 isikukood.py > output.txt &
-
-Some sample result files are added into repository.
+    cat sample_input.txt | python3 isikukood.py > sample_output.txt &
 
 Author: Toomas Mölder <toomas.molder@gmail.com>, +372 5522000  
 
