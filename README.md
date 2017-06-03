@@ -41,10 +41,13 @@ Additionally, standard output can be redirected into file and script can be run 
 
     cat sample_input.txt | python3 isikukood.py > sample_output.txt &
 
+Sample input: [sample_input.txt](sample_input.txt)
+
+Sample output: [sample_output.txt](sample_output.txt)
+
 Author: Toomas Mölder <toomas.molder@gmail.com>, +372 5522000  
 
 NB! Might be buggy and crappy, written for own purposes  
 NB! Global configuration signature is not checked. Use this program at your own risk.  
 
-TODO: better logic of input from user  
-TODO: rewrite similarities algorithm to find possible wrong keypresses on keyboard  
+TODO: implement different algorithms (Luhn, Luhn mod N, Verhoeff, Damm) to calculate check digit of ID and find their level of goodness (percentage of possible similarities).
