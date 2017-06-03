@@ -4,7 +4,7 @@
 ##   TODO: and according to Luhn algorithm https://en.wikipedia.org/wiki/Luhn_algorithm
 # 
 # Author: Toomas Mölder <toomas.molder@gmail.com>, +372 5522000
-# Last modified: 2017-06-02
+# Last modified: 2017-06-03
 #
 # NB! Might be buggy and crappy, written for own purposes
 # TODO: better logic of input from user
@@ -29,26 +29,29 @@ start_time = ""
 
 # Debug levels defined in MAIN:
 # 0 = Errors only
-# 1 = Warnings as well
-# 2 = Info
-# 3 = GUI
-# 4 = ... (for future use)
+# 1 = echo user input (useful when output is redirected into file, Linux)
+# 2 = Warnings as well
+# 3 = Info
+# 4 = GUI
+# 5 = ... (for future use)
 #
-os.environ['DEBUG'] = '0'
+os.environ['DEBUG'] = '1'
 
 def message(msg):
     debug = int(os.environ['DEBUG'])
 
-    if debug >=3:
+    if debug == 4:
         # Do it with easygui
         title = msg.split(':')[0]
         tmp = ''.join(msg.split(':')[1:]).strip()
         msgbox(tmp, title, ok_button="OK")
+    elif debug == 1:
+        print(msg)
     else:
         # NB! msg MUST include keywords 'Info' or 'Warning' or 'Error' to be printed out
-        if (("Info" in msg and debug >= 2) or
-            ("Warning" in msg and debug >= 1) or
-            ("Error" in msg and debug >= 0) or
+        if (("Info" in msg and debug == 3) or
+            ("Warning" in msg and debug >= 2) or
+            ("Error" in msg and debug >= 1) or
             ("Result" in msg)):
             print(msg)
             # sys.stdout.flush()
@@ -56,12 +59,19 @@ def message(msg):
     return
 
 # Source: http://stackoverflow.com/questions/23294658/asking-the-user-for-input-until-they-give-a-valid-response
+# Added debugging
 def sanitised_input(prompt, type_=None, min_=None, max_=None, range_=None):
+    debug = int(os.environ['DEBUG'])
+    
     if min_ is not None and max_ is not None and max_ < min_:
         raise ValueError("min_ must be less than or equal to max_.")
     
     while True:
         ui = input(prompt)
+        
+        if debug == 1:
+            print(str(ui))
+
         if type_ is not None:
             try:
                 ui = type_(ui)
@@ -89,7 +99,10 @@ def sanitised_input(prompt, type_=None, min_=None, max_=None, range_=None):
             return ui
 
 # Source: http://stackoverflow.com/questions/3041986/apt-command-line-interface-like-yes-no-input
+# Added debugging
 def query_yes_no(question, default="yes"):
+    debug = int(os.environ['DEBUG'])
+    
     """Ask a yes/no question via input() and return their answer.
 
     "question" is a string that is presented to the user.
@@ -113,6 +126,10 @@ def query_yes_no(question, default="yes"):
     while True:
         sys.stdout.write(question + prompt)
         choice = input().lower()
+        
+        if debug == 1:
+            print(str(choice))
+        
         if default is not None and choice == '':
             return valid[default]
         elif choice in valid:
@@ -138,7 +155,7 @@ def ask_start_end(about, min, max):
     debug = int(os.environ['DEBUG'])
     msg = "Starting " + about.upper() + " of ID (" + str(min) + "-" + str(max) + "): "
     
-    if debug >= 3:
+    if debug == 4:
         start = integerbox(msg, "Input", lowerbound = min, upperbound = max)
     else:
         start = sanitised_input(msg, int, min, max)
@@ -149,7 +166,7 @@ def ask_start_end(about, min, max):
     # Use already given by user START here instead of function input MIN
     msg = "Ending " + about.upper() + " of ID (" + str(start) + "-" + str(max) + "): "
     
-    if debug >= 3:
+    if debug == 4:
         end = integerbox(msg, "Input", lowerbound = start, upperbound = max)
     else:
         end = sanitised_input(msg, int, start, max)
@@ -188,7 +205,7 @@ def calc_id_check(id):
         if check == 10:
             check = 0
     
-    if debug == 2:
+    if debug == 3:
         message("(" + inspect.stack()[0][3] + ") " + "Info: " + "ID '" + id + "' check = " + str(check))
     
     return check
@@ -198,13 +215,13 @@ def is_id_len(id):
     debug = int(os.environ['DEBUG'])
     length = 11
     
-    if debug == 2:
+    if debug == 3:
         message("(" + inspect.stack()[0][3] + ") " + "Info: " + "ID '" + id + "'. Length = " + str(len(id)))
     
     if len(id) == length:
         return True
     else:
-        if debug == 1 or debug == 2:
+        if debug == 2 or debug == 3:
             message("(" + inspect.stack()[0][3] + ") " + "Warning: " + "ID '" + id + "'. Length = " + str(len(id)) + " is not " + str(length))
         return False
 
@@ -212,13 +229,13 @@ def is_id_len(id):
 def is_id_digit(id):
     debug = int(os.environ['DEBUG'])
     
-    if debug == 2:
+    if debug == 3:
         message("(" + inspect.stack()[0][3] + ") " + "Info: " + "ID '" + id + "'. Digit = " + str(id.isdigit()))
     
     if id.isdigit():
         return True
     else:
-        if debug == 1 or debug == 2:
+        if debug == 2 or debug == 3:
             message("(" + inspect.stack()[0][3] + ") " + "Warning: " + "ID '" + id + "'. Digit = " + str(id.isdigit()))
         return False
 
@@ -231,13 +248,13 @@ def is_id_century(id):
     min_century = 3
     max_century = 6
     
-    if debug == 2:
+    if debug == 3:
         message("(" + inspect.stack()[0][3] + ") " + "Info: " + "ID '" + id + "'. Century = " + str(id[0]))
     
     if (int(id[0]) >= min_century and int(id[0]) <= max_century):
         return True
     else:
-        if debug == 1 or debug == 2:
+        if debug == 2 or debug == 3:
             message("(" + inspect.stack()[0][3] + ") " + "Warning: " + "ID '" + id + "'. Century = " + str(id[0]))
         return False
 
@@ -263,7 +280,7 @@ def is_id_date(id):
     mm = int(id[3:5])
     dd = int(id[5:7])
     
-    if debug == 2:
+    if debug == 3:
         message("(" + inspect.stack()[0][3] + ") " + "Info: " + "Date Century = " + str(century) +
                 " Year (yy) = " + str(yy) +
                 " Year (yyyy) = " + str(yyyy) +
@@ -273,7 +290,7 @@ def is_id_date(id):
     if is_date_valid (yyyy, mm, dd):
         return True
     else:
-        if debug == 1 or debug == 2:
+        if debug == 2 or debug == 3:
             message("(" + inspect.stack()[0][3] + ") " + "Warning: " + "Date " + str(yyyy) + "-" + str(mm) + "-" + str(dd) + " is not valid.")
         return False
 
@@ -283,13 +300,13 @@ def is_id_check(id):
     debug = int(os.environ['DEBUG'])
     check = calc_id_check(id[:10])
     
-    if debug == 2:
+    if debug == 3:
         message("(" + inspect.stack()[0][3] + ") " + "Info: " + "ID = '" + str(id) + "'. Given check digit = " + str(id[10]) + " Calculated check digit = " + str(check))
     
     if int(id[10]) == check:
         return True
     else:
-        if debug == 1 or debug == 2:
+        if debug == 2 or debug == 3:
             message("(" + inspect.stack()[0][3] + ") " + "Warning: " + "ID = '" + str(id) + "'. Given check digit = " + str(id[10]) + " Calculated check digit = " + str(check))
         return False
     # return int(id[10]) == calc_id_check(id[:10])
@@ -371,7 +388,7 @@ def find_similar_one(id):
         if not int(id_as_list[i]) == 1:
             tmp[i] = str(keyboard_shift_left[keyboard.index(int(id_as_list[i]))])
         
-            # if debug == 2:
+            # if debug == 3:
                 # message("(" + inspect.stack()[0][3] + ") " + "Info: " + "Method: smaller " + "id_as_list[" + str(i) + "] = " + id_as_list[i] + " / tmp[" + str(i) + "] = " + tmp[i])
             
             # Join list back as string
@@ -387,7 +404,7 @@ def find_similar_one(id):
         # Value of ID digit id_as_list[i] must be NOT 0, this is rightmost numeric on keyboard
         if not int(id_as_list[i]) == 0:
             tmp[i] = str(keyboard_shift_right[keyboard.index(int(id_as_list[i]))])
-            # if debug == 2:
+            # if debug == 3:
                 # message("(" + inspect.stack()[0][3] + ") " + "Info: " + "Method: bigger " + "id_as_list[" + str(i) + "] = " + id_as_list[i] + " / tmp[" + str(i) + "] = " + tmp[i])
             
             bigger = ''.join(tmp)
@@ -404,7 +421,7 @@ def find_similar_one(id):
         # No reason to swap equal digits
         if not tmp[i] == tmp[i+1]:
             tmp[i], tmp[i+1] = tmp[i+1], tmp[i]
-            # if debug == 2:
+            # if debug == 3:
                 # message("(" + inspect.stack()[0][3] + ") " + "Info: " + "Method: swap " + "tmp[" + str(i) + "] = " + tmp[i] + " and tmp[" + str(i+1) + "] = " + tmp[i+1])
             
             swap = ''.join(tmp)
@@ -432,7 +449,7 @@ def what_to_do():
                '5 = Find similar IDs of range of IDs']
     choice = ''
     while choice not in range (0, 6):
-        if debug >= 3:
+        if debug == 4:
             tmp = choicebox(msg, title, choices)
             if tmp:
                 choice = int(tmp.split()[0])
@@ -464,7 +481,7 @@ def what_algorithm():
                  ]
     algorithm = ''
     while algorithm not in range (0, 3):
-        if debug >= 3:
+        if debug == 4:
             tmp = choicebox(msg, title, algorithms)
             if tmp:
                 algorithm = int(tmp.split()[0])
@@ -507,7 +524,7 @@ def calc_sample_speed():
     sample_eid10 = '4321123456'
     sample_check_digit = '9'
     
-    if debug == 2:
+    if debug == 3:
         message("Info: " + "Calculate approximate speed of system by executing find_similar_one within " + str(sample_sec) + " seconds with dummy data")
     
     # Keep current debug level and do set temporary debug level = 0
@@ -526,7 +543,7 @@ def calc_sample_speed():
     # Restore debug level
     os.environ['DEBUG'] = tmp_debug
     
-    if debug == 2:
+    if debug == 3:
         message("Info: " + "Sample ID speed calculation " + str(sample_nof_id) + " times within " + str(sample_time) + " seconds")
     
     return (sample_nof_id, sample_time)
@@ -537,7 +554,7 @@ def main_check_id_validity():
     id = ""
     msg = "Enter ID to check its validity (0 to exit): "
     
-    if debug >= 3:
+    if debug == 4:
         id = enterbox(msg)
     else:
         id = sanitised_input(msg, str)
@@ -570,7 +587,7 @@ def main_calculate_id_check_digit():
     
     valid = False
     while not valid:
-        if debug >= 3:
+        if debug == 4:
             id = enterbox(msg)
         else:
             id = sanitised_input(msg, str)
@@ -615,7 +632,7 @@ def main_find_similar_ids():
     
     msg = "Enter ID to find similar IDs (0 to exit): "
     while not valid:
-        if debug >= 3:
+        if debug == 4:
             id = enterbox(msg)
         else:
             id = sanitised_input(msg, str)
@@ -694,6 +711,7 @@ def main_find_similar_ids_of_range_id(pid):
     tmp_filenames = []
     
     id_similarities = {}
+    nof_id = nof_id_valid_checked = 0
     nof_id_similarities = 0 # len(id_similarities)
     min_century, max_century, min_year, max_year, min_month, max_month, min_day, max_day, min_sequence, max_sequence = get_defaults()
 
@@ -713,27 +731,27 @@ def main_find_similar_ids_of_range_id(pid):
     
     if min_century == None or max_century == None:
         message("Warning: " + "Cancel pressed.")
-        return min_id, max_id, nof_id_similarities, tmp_filenames
+        return min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames
     
     min_year, max_year = ask_start_end("year", min_year, max_year)
     if min_year == None or max_year == None:
         message("Warning: " + "Cancel pressed.")
-        return min_id, max_id, nof_id_similarities, tmp_filenames
+        return min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames
     
     min_month, max_month = ask_start_end("month", min_month, max_month)
     if min_month == None or max_month == None:
         message("Warning: " + "Cancel pressed.")
-        return min_id, max_id, nof_id_similarities, tmp_filenames
+        return min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames
     
     min_day, max_day = ask_start_end("day", min_day, max_day)
     if min_day == None or max_day == None:
         message("Warning: " + "Cancel pressed.")
-        return min_id, max_id, nof_id_similarities, tmp_filenames
+        return min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames
     
     min_sequence, max_sequence = ask_start_end("sequence", min_sequence, max_sequence)
     if min_sequence == None or max_sequence == None:
         message("Warning: " + "Cancel pressed.")
-        return min_id, max_id, nof_id_similarities, tmp_filenames
+        return min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames
 
     min_id = str(min_century) + str(min_year).zfill(2) + str(min_month).zfill(2) + str(min_day).zfill(2) + str(min_sequence).zfill(3)
     max_id = str(max_century) + str(max_year).zfill(2) + str(max_month).zfill(2) + str(max_day).zfill(2) + str(max_sequence).zfill(3)
@@ -753,7 +771,7 @@ def main_find_similar_ids_of_range_id(pid):
     
         # Every sample_nof_id IDs calculation takes appr str(sample_time) seconds
         estimated_time_seconds = int(nof_id * sample_time / sample_nof_id)
-        if debug == 2:
+        if debug == 3:
             message("Info: " + "Estimated time to calculate: " + str(estimated_time_seconds) + " seconds")
     
         # Calculate days, hours, minutes and seconds of estimated time
@@ -773,25 +791,27 @@ def main_find_similar_ids_of_range_id(pid):
             
             msg = "Do you want to continue? "
             choices = ('YES', 'no')
-            if debug >= 3:
+            if debug == 4:
                 result = ynbox(msg, "Please confirm (" + ', '.join(choices) + ")") # show a Yes/no dialog
             else:
                 result = query_yes_no(msg)
         
             if not result: # True (for continue) or False (for cancel)
                 # Get out of current elif, continue with main while-cycle
-                return min_id, max_id, nof_id_similarities, tmp_filenames
+                return min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames
                 # sys.exit("OK, exiting.")
 
-    message("Info: " + "Calculating ... Press Enter/OK to start")
+    if debug == 3:
+        message("Info: " + "Calculating ... Press Enter/OK to start")
+    
     start_time = time.time()
     
     for century in range (min_century, max_century + 1): # (3, 7):
-        if debug == 2:
+        if debug == 3:
             message("Info: " + "Century = " + str(century))
         
         for year in range (min_year, max_year + 1): # (1, 100):
-            if debug == 2:
+            if debug == 3:
                 message("Info: " + "Year = " + str(year))
             
             # start_eid10 is used to create temporary files for found similarities of every year
@@ -802,15 +822,15 @@ def main_find_similar_ids_of_range_id(pid):
             # Calculate year as YYYY according to century
             yyyy = (17 + (century + 1) // 2) * 100 + year
             for month in range (min_month, max_month + 1): # (1, 13):
-                if debug == 2:
+                if debug == 3:
                     message("Info: " + "Month = " + str(month))
                     
                 for day in range (min_day, max_day + 1): # (1, 32):
-                    if debug == 2:
+                    if debug == 3:
                         message("Info: " + "Day = " + str(day))
                         
                     if is_date_valid (yyyy, month, day):
-                        if debug == 2:
+                        if debug == 3:
                             message("Info: " + "Valid date: " + str(day) + "." + str(month) + "." + str(yyyy))
                             
                         if (max_sequence > min_sequence):
@@ -834,21 +854,23 @@ def main_find_similar_ids_of_range_id(pid):
                             tmp = find_similar_one(id)
                             # ----------
                             #
+                            nof_id_valid_checked += 1
+                            
                             if tmp:
                                 id_similarities[id] = sorted(tmp)
                                 nof_id_similarities += 1
-                                if debug == 2:
+                                if debug == 3:
                                     message("Info: " + "ID: " + "id_similarities[" + str(id) + "] = " + str(id_similarities[id])) 
                             
                             else:
-                                if debug == 2:
+                                if debug == 3:
                                     message("Info: " + "ID: " + str(id) + " -- No similarities found.")
                         # End of for cycle
                         
                     else:
                         # Date was not valid, set sequence as negative. We will use it in following not to print out end of sequence
                         sequence = -1
-                        if debug == 2:
+                        if debug == 3:
                             message("Info: " + "Date is not valid: " + str(day) + "." + str(month) + "." + str(year))
                         
                     # Check sequence. If sequence is negative, we will not print out end of sequence
@@ -856,13 +878,13 @@ def main_find_similar_ids_of_range_id(pid):
                         print(str(max_sequence) + " - 100%")
                         sys.stdout.flush()
                         
-                    if debug == 2:
+                    if debug == 3:
                         message("Info: " + "End of day: " + str(day))
                     
-                if debug == 2:
+                if debug == 3:
                     message("Info: " + "End of month: " + str(month))
                 
-            if debug == 2:
+            if debug == 3:
                 message("Info: " + "End of year: " + str(year))
             
             # Keep similarities within temporary file
@@ -877,10 +899,10 @@ def main_find_similar_ids_of_range_id(pid):
             # Flush similarities
             id_similarities = {}
         
-        if debug == 2:
+        if debug == 3:
             message("Info: " + "End of century: " + str(century))
         
-    if debug == 2:
+    if debug == 3:
         message("Info: " + "END")
 
     end_time = time.time()
@@ -888,7 +910,7 @@ def main_find_similar_ids_of_range_id(pid):
     if start_time:
         message("*** Result: " + "--- %s seconds ---" % (end_time - start_time))
 
-    return min_id, max_id, nof_id_similarities, tmp_filenames
+    return min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames
 
 # Find similarities with maximum length
 # TODO: it is not the best solution as it keeps also all current max length elements, growing from first until to final max
@@ -927,16 +949,16 @@ choice = ''
 while True:
     # Get current process id to be used as identifier in temporary files during choice = 5
     pid = os.getpid()
-    if debug == 2:
+    if debug == 3:
         message("Info: " + "Current PID = " + str(pid))
     
     choice = what_to_do()
-    if debug == 2:
+    if debug == 3:
         message("Info: " + "Your choice was: " + str(choice))
 
     if choice == 0:
         # Exit
-        message("Info: " + "Exiting")
+        message("*** Result: " + "Exiting")
         sys.exit(0)
     
     # TODO: implement different algorithms
@@ -971,10 +993,10 @@ while True:
         # Get current process id to be used as identifier in temporary files during choice = 5
         # Use it as argument for main_find_similar_ids_of_range_id()
         pid = os.getpid()
-        if debug == 2:
+        if debug == 3:
             message("Info: " + "Current PID = " + str(pid))
     
-        min_id, max_id, nof_id_similarities, tmp_filenames = main_find_similar_ids_of_range_id(pid)
+        min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames = main_find_similar_ids_of_range_id(pid)
         message("*** Result: " + "ID range '" + str(min_id) + "' - '" + str(max_id) + "' - found " + str(nof_id_similarities) + " similarities")
         
         # If found some similarities
@@ -987,7 +1009,7 @@ while True:
             if os.path.exists(filename):
                 msg = "Warning: " + filename + " exists.\nDo you want to overwrite? "
                 choices = ('YES', 'no')
-                if debug >= 3:
+                if debug == 4:
                     result = ynbox(msg, "Please confirm (" + ', '.join(choices) + ")") # show a Yes/no dialog
                 else:
                     result = query_yes_no(msg)
@@ -995,7 +1017,7 @@ while True:
             # Ask for new filename
             if result == False:
                 msg = "Enter filename: "
-                if debug >= 3:
+                if debug == 4:
                     filename = filesavebox(msg=msg, title=msg, default=filename, filetypes=None)
                 else:
                     filename = sanitised_input(msg, str)
@@ -1010,14 +1032,22 @@ while True:
                     
                     id_similarities.update(tmp_id_similarities)
                     # Remove tmp_filenames
-                    os.remove(tmp_filename)
+                    # os.remove(tmp_filename)
                     
                 with open(filename, 'w') as fp:
                     json.dump(id_similarities, fp, indent = 4)
                 
                 # Find similarities with maximum length
                 max_length, max_id_similarities = GetMaxLen(id_similarities)
-                msg = "*** Result: " + "Max number of similarities = " + str(max_length) + " for IDs:"
+                
+                msg = ""
+                # return min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames
+                msg = msg + "\n" + "*** Result: " + "Total number of IDs reviewed = " + str(nof_id_valid_checked)
+                msg = msg + "\n" + "From them number of IDs with similarities = " + str(len(id_similarities))
+                if nof_id_valid_checked:
+                    msg = msg + " " + '({0:.2f}%)'.format(len(id_similarities) /  nof_id_valid_checked)
+                
+                msg = msg + "\n" + "Max number of similarities = " + str(max_length) + " found for these IDs:"
                 
                 for key, value in max_id_similarities.items():
                     msg = msg + "\n" + "\"" + key + "\"" + ": " + str(value)
@@ -1025,7 +1055,7 @@ while True:
                 message(msg)
                 
                 # Temporary solution - Exit immediately
-                sys.exit(0)
+                # sys.exit(0)
             
     # All the rest of choices if in whatever reason they came through until here
     else:
