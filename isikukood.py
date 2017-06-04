@@ -4,7 +4,7 @@
 ##   TODO: and according to Luhn algorithm https://en.wikipedia.org/wiki/Luhn_algorithm
 # 
 # Author: Toomas Mölder <toomas.molder@gmail.com>, +372 5522000
-# Last modified: 2017-06-03
+# Last modified: 2017-06-04
 #
 # NB! Might be buggy and crappy, written for own purposes
 # TODO: better logic of input from user
@@ -1045,7 +1045,7 @@ while True:
                 msg = msg + "\n" + "*** Result: " + "Total number of IDs reviewed = " + str(nof_id_valid_checked)
                 msg = msg + "\n" + "From them number of IDs with similarities = " + str(len(id_similarities))
                 if nof_id_valid_checked:
-                    msg = msg + " " + '({0:.2f}%)'.format(len(id_similarities) /  nof_id_valid_checked)
+                    msg = msg + " " + '({0:.4f}%)'.format(100 * len(id_similarities) /  nof_id_valid_checked)
                 
                 msg = msg + "\n" + "Max number of similarities = " + str(max_length) + " found for these IDs:"
                 
