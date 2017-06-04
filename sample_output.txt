@@ -819,8 +819,8 @@ Do you want to continue?  [Y/n]
 Warning: 6040101000-6041231999_similarities_id.json exists.
 Do you want to overwrite?  [Y/n]
 
-*** Result: Total number of IDs reviewed = 366000
-From them number of IDs with similarities = 87662 (23.9514%)
+*** Result: Total number of IDs reviewed = 366.000
+From them number of IDs with similarities = 87.662 (23.9514%)
 Max number of similarities = 7 found for these IDs:
 "60404215986": ['60404215086', '60404215968', '60404219586', '60404225986', '60404251986', '64004215986', '69404215986']
 
