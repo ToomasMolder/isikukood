@@ -7,7 +7,34 @@ An Estonian Personal identification code consists of 11 digits, generally given 
 The form is GYYMMDDSSSC, where G shows sex and century of birth (odd number male, even number female, 1-2 19th century, 
 3-4 20th century, 5-6 21st century), SSS is a serial number separating persons born on the same date and C a checksum.
 
-Source: https://en.wikipedia.org/wiki/National_identification_number#Estonia
+Was running Python script isikukood.py with different centuries (G = [3, 4, 5, 6]):
+
+      Choices:
+              0 = Exit
+              1 = Check ID validity
+              2 = Calculate ID check digit
+              3 = Find similar IDs of one ID
+              4 = Find similar IDs of random ID
+              5 = Find similar IDs of range of IDs
+      What to do? (0-5): 5
+      Starting CENTURY of ID (3-6): G <== NB! Enter here G from list [3, 4, 5, 6]
+      Ending CENTURY of ID (3-6): G <== NB! Enter here G from list [3, 4, 5, 6]
+      Starting YEAR of ID (0-99): 0
+      Ending YEAR of ID (0-99): 99
+      Starting MONTH of ID (1-12): 1
+      Ending MONTH of ID (1-12): 12
+      Starting DAY of ID (1-31): 1
+      Ending DAY of ID (1-31): 31
+      Starting SEQUENCE of ID (0-999): 0
+      Ending SEQUENCE of ID (0-999): 999
+      Info: Similarities of ID-s to find: from G000101000 to G991231999
+      Warning: Number of ID-s to be calculated is at least 37.200.000.
+      It might take a looooooong time (appr. dd days hh hrs mm min ss sec)
+
+## Sources
+
+- Source: https://en.wikipedia.org/wiki/National_identification_number#Estonia
+- Source: https://et.wikipedia.org/wiki/Isikukood
 
 ## G = 3
 
