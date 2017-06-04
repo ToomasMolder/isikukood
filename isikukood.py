@@ -1042,8 +1042,8 @@ while True:
                 
                 msg = ""
                 # return min_id, max_id, nof_id, nof_id_valid_checked, nof_id_similarities, tmp_filenames
-                msg = msg + "\n" + "*** Result: " + "Total number of IDs reviewed = " + str(nof_id_valid_checked)
-                msg = msg + "\n" + "From them number of IDs with similarities = " + str(len(id_similarities))
+                msg = msg + "\n" + "*** Result: " + "Total number of IDs reviewed = " + str(group(nof_id_valid_checked))
+                msg = msg + "\n" + "From them number of IDs with similarities = " + str(group(len(id_similarities)))
                 if nof_id_valid_checked:
                     msg = msg + " " + '({0:.4f}%)'.format(100 * len(id_similarities) /  nof_id_valid_checked)
                 
