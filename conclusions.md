@@ -4,7 +4,7 @@ Reason to use algorithm modulo 11 as it is stated in Estonian standard EVS 585:2
 
 Algorithm (modulo 11) to calculate check digit of Estonian ID (isikukood) does NOT guarantee non-existence of human or input errors. 
 
-Use of only 9 different weights (123456789) to calculate check digit for 10-digit ID is not enough.
+Use of only 9 different weights (method I: 123456789; method II: 3456789123) to calculate check digit for 10-digit ID is not enough.
 
 At least 3 different-level weaknesses are available in implementation of Estonian ID:
 
